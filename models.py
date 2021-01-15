@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-from transformers import CamembertForMaskedLM, CamembertTokenizer
+from transformers import CamembertModel, CamembertForMaskedLM,\
+        CamembertTokenizer
 
 def tokenizer():
     return CamembertTokenizer.from_pretrained("camembert-base")
@@ -17,16 +18,34 @@ def index2(src, index):
     return torch.flatten(src,start_dim=0, end_dim=1)[flat_index]
 
 class MaskedLogit(nn.Module):
-    def __init__(self, transformer):
+    def __init__(self, transformer, normalize=False):
         super(MaskedLogit, self).__init__()
         self.transformer = transformer
+        self.normalize   = normalize
 
     def forward(self, index, tk, input_ids, attention_mask=None):
         out = self.transformer(input_ids, attention_mask=attention_mask)[0]
         out_index = index2(out, index)
         out_token = index2(out_index, tk)
-        return out_token
+        if self.normalize:
+            return out_token / torch.linalg.norm(out_index)
+        else:
+            return out_token
 
-def maskedLogit():
+def maskedLogit(normalize=False):
     transformer = CamembertForMaskedLM.from_pretrained("camembert-base")
-    return MaskedLogit(transformer)
+    return MaskedLogit(transformer, normalize=normalize)
+
+class ExtractHiddenState(nn.Module):
+    def __init__(self, transformer):
+        super(ExtractHiddenState, self).__init__()
+        self.transformer = transformer
+    
+    def forward(self, index, input_ids, attention_mask=None):
+        out = self.transformer(input_ids, attention_mask=attention_mask,
+                    return_dict=True).last_hidden_state
+        return index2(out, index)
+
+def extractHiddenState():
+    transformer = CamembertModel.from_pretrained("camembert-base")
+    return ExtractHiddenState(transformer)

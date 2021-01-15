@@ -1,4 +1,5 @@
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
+import torch
 
 from gen import GenerationException
 
@@ -42,6 +43,26 @@ def make_gen_dataset(src_dataset, confuser):
                 'input_ids': seqs,    'label':  labels,
                 'attention_mask': att_masks}
 
-    gen_dataset = src_dataset.map(generator, batched=True, batch_size=1)
+    gen_dataset = src_dataset.map(generator, batched=True, batch_size=1,
+                        load_from_cache_file=False)
     set_dataset_format(gen_dataset)
     return gen_dataset
+
+def set_dataset_format_with_hidden(dataset):
+    dataset.set_format(type='torch',
+            columns=['label', 'index', 'correct', 'token',
+                     'input_ids', 'attention_mask', 'hidden_state'])
+
+def compute_hidden_state(dataset, extracter):
+    def run_extracter(src):
+        indexes   = torch.tensor(src['index'])
+        in_ids    = torch.tensor(src['input_ids'])
+        att_masks = torch.tensor(src['attention_mask'])
+
+        with torch.no_grad:
+            hidden_states = extracter(indexes, input_ids, att_masks)
+        return {'hidden_state' : hidden_states}
+    
+    c_dataset = dataset.map(run_extracter, batched=True, batch_size=1,
+                        load_from_cache_file=False)
+

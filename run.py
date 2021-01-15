@@ -2,6 +2,7 @@ import torch
 import models, loaders, gen
 from gen import Confuser
 from tqdm import tqdm
+from datasets import total_allocated_bytes
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -17,7 +18,7 @@ def test_confuser():
         confuser.print_confusion(tokenizer, tk)
 
 
-def test_maskedLogit(count=100):
+def test_maskedLogit(count=100, normalize=False):
     tokenizer = models.tokenizer()
     
     print("loading confusion...")
@@ -30,7 +31,7 @@ def test_maskedLogit(count=100):
     del src_dataset
 
     print("loading model...")
-    model     = models.maskedLogit()
+    model     = models.maskedLogit(normalize=normalize)
     model.eval()
     
     dataloader = torch.utils.data.DataLoader(gen_dataset, batch_size=5)
@@ -58,3 +59,26 @@ def plot_maskedLogitError(outputs):
     plt.ylabel('%')
     plt.legend()
     plt.show()
+
+def gen_with_hidden_states(count=10):
+    tokenizer = models.tokenizer()
+    
+    print("loading model...")
+    extracter = models.extractHiddenState()
+    extracter.eval()
+
+    print("loading confusion...")
+    confuser  = gen.Confuser(tokenizer)
+    
+    print("loading dataset...")
+    src_dataset = loaders.make_src_dataset(tokenizer,
+                    name='train', count=count)
+    
+    print("generating examples...")
+    gen_dataset = loaders.make_gen_dataset(src_dataset, confuser)
+    del src_dataset
+
+    print("computing hidden states...")
+    c_dataset = loaders.compute_hidden_state(gen_dataset, extracter)
+
+    return c_dataset
