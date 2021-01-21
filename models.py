@@ -14,7 +14,9 @@ def word_to_tkid(tokenizer, word):
 
 # return [o[index[i]] for o in out]
 def index2(src, index):
-    flat_index = src.shape[1] * torch.tensor(range(src.shape[0])) + index
+    flat_index = src.shape[1]\
+                    * torch.tensor(range(src.shape[0])).to(index.device)\
+                + index
     return torch.flatten(src,start_dim=0, end_dim=1)[flat_index]
 
 class MaskedLogit(nn.Module):
