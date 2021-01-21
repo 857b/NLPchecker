@@ -23,8 +23,8 @@ _data/vocab_dist.txt:_data/vocab.txt _build/edit_nn
 
 _data/train:preprocess
 	@echo generating training data
-	@$(PY) cli.py --gen-data _data/train --src-data train --src-count 100
+	@$(PY) cli.py --gen-data _data/train --src-data train --src-count 100000
 
 _data/test:preprocess
 	@echo generating test data
-	@$(PY) cli.py --gen-data _data/test --src-data test --src-count 100
+	@$(PY) cli.py --gen-data _data/test --src-data test --src-count 1000
