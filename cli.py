@@ -25,7 +25,7 @@ parser.add_argument('--eval-period', dest='eval_period',
                 type=int, default=20000)
 parser.add_argument('--model-params', dest='model_params',
                 type=str, default=None)
-parser.add_argument('save-period', dest='save_period',
+parser.add_argument('--save-period', dest='save_period',
                 type=int, default=10)
 
 parser.add_argument('--train', dest='train',
