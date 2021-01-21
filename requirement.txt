@@ -1,4 +1,7 @@
 torch
+numpy
+matplotlib
+tqdm
 transformers
 sentencepiece
 datasets

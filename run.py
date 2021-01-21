@@ -24,37 +24,6 @@ def test_confuser():
         print("--- confusion")
         confuser.print_confusion(tokenizer, tk)
 
-
-def test_maskedLogit(count=100, normalize=False):
-    tokenizer = models.tokenizer()
-    
-    print("loading confusion...")
-    confuser  = gen.Confuser(tokenizer)
-    
-    print("loading dataset...")
-    src_dataset = loaders.make_src_dataset(tokenizer,
-                    name='test', count=count)
-    gen_dataset = loaders.make_gen_dataset(src_dataset, confuser)
-    del src_dataset
-
-    print("loading model...")
-    model     = models.maskedLogit(normalize=normalize)
-    model.eval()
-    model.to(device)
-    
-    dataloader = torch.utils.data.DataLoader(gen_dataset, batch_size=8)
-    outputs = [[], []]
-    with torch.no_grad():
-        for batch in tqdm(dataloader, desc="evaluation"):
-            out = model(batch['index'].to(device),
-                        batch['token'].to(device),
-                        batch['input_ids'].to(device),
-                        batch['attention_mask'].to(device))
-            for l,o in zip(batch['label'], out):
-                outputs[l].append(o.item())
-    return outputs
-
-
 def gen_with_hidden_states(name='train', count=10, save_path=None):
     tokenizer = models.tokenizer()
     
@@ -83,11 +52,56 @@ def gen_with_hidden_states(name='train', count=10, save_path=None):
 
     return c_dataset
 
-def load_toy_datas(data_path="_data/train_toy"):
-    tokenizer = models.tokenizer()
+# --- Maksed Logit ---
+
+def seuil_optimal(output):
+    s_0 = output[0][:]
+    s_0.sort()
+    s_1 = output[1][:]
+    s_1.sort()
+
+    i_0 = 0
+    i_1 = 0
+    while i_0/len(s_0) < 1 - i_1/len(s_1):
+        if s_0[i_0] < s_1[i_1]:
+            i_0 += 1
+        else:
+            i_1 += 1
+    return min(s_0[i_0], s_1[i_1]), i_0/len(s_0)
+
+def evaluate_maskedLogit(data_path, seuil=None):
+    print("loading dataset...")
     datas = loaders.load_from_disk(data_path)
-    loaders.set_dataset_format_with_hidden(datas)
-    return tokenizer, datas
+    loaders.set_dataset_format(datas)
+    
+    print("loading model...")
+    model     = models.maskedLogit()
+    model.eval()
+    model.to(device)
+
+    dataloader = torch.utils.data.DataLoader(datas, batch_size=16)
+    
+    outputs = [[], []]
+    confusion = [[0,0],[0,0]]
+
+    with torch.no_grad():
+        for batch in tqdm(dataloader, desc="evaluation"):
+            out = model(batch['index'].to(device),
+                        batch['token'].to(device),
+                        batch['input_ids'].to(device),
+                        batch['attention_mask'].to(device))
+            for l,o in zip(to_numpy(batch['label']), out):
+                outputs[l].append(o.item())
+                if seuil is not None:
+                    confusion[l][o < seuil] += 1
+    return outputs, confusion
+
+# --- Classifier ---
+
+def load_classifier(checkpoint):
+    model = models.classifier(models.tokenizer())
+    model.load_state_dict(torch.load(checkpoint, map_location=device))
+    return model.to(device)
 
 def evaluate_classifier(datas, model):
     dataloader = torch.utils.data.DataLoader(datas, batch_size=8)
@@ -111,7 +125,6 @@ def evaluate_classifier(datas, model):
     
     acc = confusion[0][0] + confusion[1][1]
     return loss/num_sample, acc/num_sample, confusion
-            
 
 def train_classifier(data_path, num_epoch=3, lr=5e-3, save=None,
         test_data_path=None, eval_period=10,
@@ -127,7 +140,7 @@ def train_classifier(data_path, num_epoch=3, lr=5e-3, save=None,
 
     model = models.classifier(models.tokenizer())
     if model_params:
-        model.load_state_dict(torch.load(model_params))
+        model.load_state_dict(torch.load(model_params, map_location=device))
     model.to(device)
     criterion = torch.nn.BCEWithLogitsLoss(reduction='sum')
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)

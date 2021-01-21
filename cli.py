@@ -49,6 +49,6 @@ elif args.train:
                     eval_period=args.eval_period,
                     model_params=args.model_params,
                     save_period=args.save_period)
-    torch.save(model.state_dict, '{}/final.json'.format(args.train))
+    torch.save(model.state_dict(), '{}/final.json'.format(args.train))
     with open('{}/loss.json'.format(args.train), 'w') as f:
         json.dump(loss, f)

@@ -18,7 +18,7 @@ def plot_maskedLogitError(outputs):
     plt.show()
 
 def plot_training(losses, num_train):
-    ex = num_train * np.array(range(len(losses['epoch_loss'])))
+    ex = num_train * (0.5 + np.array(range(len(losses['epoch_loss']))))
     plt.plot(ex, losses['epoch_loss'], label='train epoch loss')
 
     px = np.cumsum(losses['periods'])
@@ -28,6 +28,25 @@ def plot_training(losses, num_train):
         plt.plot(px, losses['test_loss'], label='test loss')
     if losses['test_acc']:
         plt.plot(px, losses['test_acc'], label='test acc')
+
+    plt.xlabel('sample')
+    
+    plt.legend()
+    plt.show()
+
+def plot_training2(l1, l2, num_train, shift2):
+    ex = num_train * (0.5
+            + np.array(range(len(l1['epoch_loss']) + len(l2['epoch_loss']))))
+    plt.plot(ex, l1['epoch_loss'] + l2['epoch_loss'], label='train epoch loss')
+
+    px = np.concatenate([np.cumsum(l1['periods']),
+        shift2 + np.cumsum(l2['periods'])])
+    plt.plot(px, l1['period_loss']+l2['period_loss'], label='train period loss')
+
+    plt.plot(px, l1['test_loss']+l2['test_loss'], label='test loss')
+    plt.plot(px, l1['test_acc']+l2['test_acc'], label='test acc')
+
+    plt.xlabel('sample')
     
     plt.legend()
     plt.show()
