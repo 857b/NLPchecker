@@ -3,9 +3,9 @@ CXX=g++
 CPPFLAGS=-Wall -O2
 CXXFLAGS=-std=gnu++11
 
-.PHONY:preprocess
-
 preprocess: _data/vocab_dist.txt
+
+datasets: _data/train _data/test
 
 _data/vocab.txt:gen/export-vocab.py
 	@mkdir -p _data
@@ -20,3 +20,11 @@ _build/edit_nn:gen/edit_nn.cpp
 _data/vocab_dist.txt:_data/vocab.txt _build/edit_nn
 	@echo vocab_dist
 	@time ./_build/edit_nn gen/char_confusion.txt < _data/vocab.txt > $@
+
+_data/train:preprocess
+	@echo generating training data
+	@$(PY) cli.py --gen-data _data/train --src-data train --src-count 100
+
+_data/test:preprocess
+	@echo generating test data
+	@$(PY) cli.py --gen-data _data/test --src-data test --src-count 100

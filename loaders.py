@@ -54,17 +54,17 @@ def set_dataset_format_with_hidden(dataset):
     dataset.set_format(type='torch',
             columns=['label', 'correct', 'token', 'hidden_state'])
 
-def compute_hidden_state(dataset, extracter):
+def compute_hidden_state(dataset, extracter, device):
     def run_extracter(src):
-        indexes   = src['index']
-        in_ids    = src['input_ids']
-        att_masks = src['attention_mask']
+        indexes   = src['index'].to(device)
+        in_ids    = src['input_ids'].to(device)
+        att_masks = src['attention_mask'].to(device)
 
         with torch.no_grad():
             hidden_states = extracter(indexes, in_ids, att_masks)
         return {'hidden_state' : hidden_states.detach().numpy()}
     
-    c_dataset = dataset.map(run_extracter, batched=True, batch_size=1,
+    c_dataset = dataset.map(run_extracter, batched=True, batch_size=16,
                         load_from_cache_file=False)
     set_dataset_format_with_hidden(c_dataset)
     return c_dataset
