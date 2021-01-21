@@ -21,6 +21,8 @@ parser.add_argument('--lr', dest='lr',
                 type=float, default=5e-3)
 parser.add_argument('--epochs', dest='num_epoch',
                 type=int, default=50)
+parser.add_argument('--eval-period', dest='eval_period',
+                type=int, default=10)
 
 parser.add_argument('--train', dest='train',
                 type=str, default=None)
@@ -39,7 +41,8 @@ elif args.train:
 
     model, loss = run.train_classifier(args.train_data,
                     num_epoch=args.num_epoch, lr=args.lr, save=args.train,
-                    test_data_path=args.test_data)
+                    test_data_path=args.test_data,
+                    eval_period=args.eval_period)
     torch.save(model.state_dict, '{}/final.json'.format(args.train))
     with open('{}/loss.json'.format(args.train), 'w') as f:
         json.dump(loss, f)

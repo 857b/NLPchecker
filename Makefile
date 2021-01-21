@@ -21,10 +21,10 @@ _data/vocab_dist.txt:_data/vocab.txt _build/edit_nn
 	@echo vocab_dist
 	@time ./_build/edit_nn gen/char_confusion.txt < _data/vocab.txt > $@
 
-_data/train:preprocess
+_data/train/:preprocess
 	@echo generating training data
 	@$(PY) cli.py --gen-data _data/train --src-data train --src-count 100000
 
-_data/test:preprocess
+_data/test/:preprocess
 	@echo generating test data
 	@$(PY) cli.py --gen-data _data/test --src-data test --src-count 1000

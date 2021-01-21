@@ -114,7 +114,7 @@ def evaluate_classifier(datas, model):
             
 
 def train_classifier(data_path, num_epoch=3, lr=5e-3, save=None,
-        test_data_path=None):
+        test_data_path=None, eval_period=10):
 
     datas = loaders.load_from_disk(data_path)
     loaders.set_dataset_format_with_hidden(datas)
@@ -135,8 +135,6 @@ def train_classifier(data_path, num_epoch=3, lr=5e-3, save=None,
     accs   = []
     test_losses = []
     test_accs   = []
-
-    eval_period = 10
 
     for n_epoch in trange(num_epoch, desc="epoch"):
         epoch_loss = 0
