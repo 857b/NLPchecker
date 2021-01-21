@@ -2,6 +2,7 @@ import torch
 import models, loaders, gen
 from gen import Confuser
 from tqdm import tqdm, trange
+from util import to_numpy
 import json
 
 device = None
@@ -104,8 +105,8 @@ def evaluate_classifier(datas, model):
                                                   .to(device)).item()
             num_sample += len(batch['token'])
 
-            pred = torch.sigmoid(pred).detach().numpy()
-            for p,l in zip(pred > 0.5, batch['label'].detach().numpy()):
+            pred = to_numpy(torch.sigmoid(pred))
+            for p,l in zip(pred > 0.5, to_numpy(batch['label'])):
                 confusion[l][p] += 1
     
     acc = confusion[0][0] + confusion[1][1]

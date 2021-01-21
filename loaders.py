@@ -1,6 +1,7 @@
 from datasets import load_dataset, load_from_disk
 import torch
 import numpy as np
+from util import to_numpy
 
 from gen import GenerationException
 
@@ -62,7 +63,7 @@ def compute_hidden_state(dataset, extracter, device):
 
         with torch.no_grad():
             hidden_states = extracter(indexes, in_ids, att_masks)
-        return {'hidden_state' : hidden_states.detach().numpy()}
+        return {'hidden_state' : to_numpy(hidden_states)}
     
     c_dataset = dataset.map(run_extracter, batched=True, batch_size=16,
                         load_from_cache_file=False)
