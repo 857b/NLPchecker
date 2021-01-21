@@ -114,7 +114,8 @@ def evaluate_classifier(datas, model):
             
 
 def train_classifier(data_path, num_epoch=3, lr=5e-3, save=None,
-        test_data_path=None, eval_period=10):
+        test_data_path=None, eval_period=10,
+        model_params=None, save_period=1):
 
     datas = loaders.load_from_disk(data_path)
     loaders.set_dataset_format_with_hidden(datas)
@@ -125,6 +126,8 @@ def train_classifier(data_path, num_epoch=3, lr=5e-3, save=None,
         loaders.set_dataset_format_with_hidden(test_datas)
 
     model = models.classifier(models.tokenizer())
+    if model_params:
+        model.load_state_dict(torch.load(model_params))
     model.to(device)
     criterion = torch.nn.BCEWithLogitsLoss(reduction='sum')
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
@@ -140,6 +143,7 @@ def train_classifier(data_path, num_epoch=3, lr=5e-3, save=None,
     period_loss   = 0
     period_sample = 0
     num_checkpoint = 0
+    save_i = 0
 
     for n_epoch in trange(num_epoch, desc="epoch"):
         epoch_loss = 0
@@ -161,7 +165,8 @@ def train_classifier(data_path, num_epoch=3, lr=5e-3, save=None,
             optimizer.step()
             
             if period_sample > eval_period:
-                if save:
+                save_i += 1
+                if save and save_i % save_period == 0:
                     torch.save(model.state_dict(),
                             '{}/checkpoint_{}.json'
                             .format(save, num_checkpoint))
