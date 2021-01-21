@@ -17,9 +17,17 @@ def plot_maskedLogitError(outputs):
     plt.legend()
     plt.show()
 
-def plot_training(losses):
-    for name,(period,ys) in losses.items():
-        xs = period * np.array(range(len(ys)))
-        plt.plot(xs, ys, label=name)
+def plot_training(losses, num_train):
+    ex = num_train * np.array(range(len(losses['epoch_loss'])))
+    plt.plot(ex, losses['epoch_loss'], label='train epoch loss')
+
+    px = np.cumsum(losses['periods'])
+    plt.plot(px, losses['period_loss'], label='train period loss')
+
+    if losses['test_loss']:
+        plt.plot(px, losses['test_loss'], label='test loss')
+    if losses['test_acc']:
+        plt.plot(px, losses['test_acc'], label='test acc')
+    
     plt.legend()
     plt.show()

@@ -129,16 +129,21 @@ def train_classifier(data_path, num_epoch=3, lr=5e-3, save=None,
     criterion = torch.nn.BCEWithLogitsLoss(reduction='sum')
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
     
-    dataloader = torch.utils.data.DataLoader(datas, batch_size=8)
+    dataloader = torch.utils.data.DataLoader(datas, batch_size=16)
 
-    losses = []
-    accs   = []
+    losses      = []
+    periods     = []
+    period_losses = []
     test_losses = []
     test_accs   = []
 
+    period_loss   = 0
+    period_sample = 0
+    num_checkpoint = 0
+
     for n_epoch in trange(num_epoch, desc="epoch"):
         epoch_loss = 0
-        num_sample = 0
+        epoch_sample = 0
 
         for batch in tqdm(dataloader, desc="batches", leave=False):
             pred = model(batch['token'].to(device),
@@ -146,28 +151,47 @@ def train_classifier(data_path, num_epoch=3, lr=5e-3, save=None,
                                               .to(device))
             loss = criterion(pred, batch['label'].to(torch.float)
                                                  .to(device))
-            epoch_loss += loss.item()
-            num_sample += len(batch['token'])
+            epoch_loss    += loss.item()
+            epoch_sample  += len(batch['token'])
+            period_loss   += loss.item()
+            period_sample += len(batch['token'])
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            
+            if period_sample > eval_period:
+                if save:
+                    torch.save(model.state_dict(),
+                            '{}/checkpoint_{}.json'
+                            .format(save, num_checkpoint))
 
-        losses.append(epoch_loss / num_sample)
+                periods.append(period_sample)
+                period_losses.append(period_loss/period_sample)
 
-        if save and n_epoch % eval_period == 0:
-            torch.save(model.state_dict(),
-                    '{}/epoch_{}.json'.format(save, n_epoch))
+                if test_datas is not None:
+                    test_loss,test_acc,_ = evaluate_classifier(test_datas, model)
+                    test_losses.append(test_loss)
+                    test_accs.append(test_acc)
+                    print("{} :: train loss: {}   test loss: {}   test acc: {}"
+                            .format(num_checkpoint,
+                                    period_loss/period_sample,
+                                    test_loss, test_acc))
+                else:
+                    print("train loss: {}".format(num_checkpoint,
+                                    period_loss/period_sample))
 
-            _,train_acc,_ = evaluate_classifier(datas, model)
-            accs.append(train_acc)
-            if test_datas is not None:
-                test_loss,test_acc,_ = evaluate_classifier(test_datas, model)
-                test_losses.append(test_loss)
-                test_accs.append(test_acc)
+                num_checkpoint += 1
+                period_sample = 0
+                period_loss = 0
+                
+
+        losses.append(epoch_loss / epoch_sample)
     
     return model, {
-            'train_loss': (1, losses),
-            'train_acc':  (eval_period, accs),
-            'test_loss':  (eval_period, test_losses),
-            'test_acc':   (eval_period, test_accs)
+            'epoch_loss':  losses,
+            'periods':     periods,
+            'period_loss': period_losses,
+            'test_loss':   test_losses,
+            'test_acc':    test_accs
         }

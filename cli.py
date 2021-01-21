@@ -20,9 +20,9 @@ parser.add_argument('--test-data', dest='test_data',
 parser.add_argument('--lr', dest='lr',
                 type=float, default=5e-3)
 parser.add_argument('--epochs', dest='num_epoch',
-                type=int, default=50)
+                type=int, default=5)
 parser.add_argument('--eval-period', dest='eval_period',
-                type=int, default=10)
+                type=int, default=20000)
 
 parser.add_argument('--train', dest='train',
                 type=str, default=None)
